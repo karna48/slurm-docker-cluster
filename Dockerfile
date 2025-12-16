@@ -125,6 +125,8 @@ RUN set -ex \
        readline \
        vim-enhanced \
        wget \
+       openssh-server \
+       python3.12 \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 
@@ -186,6 +188,15 @@ RUN set -x \
 # Copy Slurm configuration files
 # Version-specific configs: Extract major.minor from SLURM_VERSION (e.g., "24.11" from "24.11.6")
 COPY config/ /tmp/slurm-config/
+
+RUN set -ex \
+    && cp /tmp/slurm-config/sshd_config /etc/ssh/sshd_config \
+    && ssh-keygen -A \
+    && useradd -m user1 \
+    && useradd -m user2 \
+    && printf 'user1:slurmer05\nuser2:slurmer05' | chpasswd \
+    && mkdir /jail
+
 RUN set -ex \
     && MAJOR_MINOR=$(echo ${SLURM_VERSION} | cut -d. -f1,2) \
     && echo "Detected Slurm version: ${MAJOR_MINOR}" \

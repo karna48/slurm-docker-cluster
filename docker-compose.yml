@@ -37,6 +37,7 @@ services:
       - etc_munge:/etc/munge
       - etc_slurm:/etc/slurm
       - var_log_slurm:/var/log/slurm
+      - home:/home
     expose:
       - "6819"
     depends_on:
@@ -62,10 +63,46 @@ services:
       - etc_slurm:/etc/slurm:z
       - slurm_jobdir:/data:z
       - var_log_slurm:/var/log/slurm:z
+      - scratch_c1:/scratch/c1
+      - scratch_c2:/scratch/c2
+      - home:/home
     expose:
       - "6817"
     depends_on:
       slurmdbd:
+        condition: service_healthy
+    networks:
+      - slurm-network
+    healthcheck:
+      test: ["CMD-SHELL", "scontrol ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  slurmlogin:
+    image: slurm-docker-cluster:${SLURM_VERSION:-25.05.3}
+    command: ["/usr/sbin/sshd", "-D", "-e"]
+    container_name: slurmlogin
+    hostname: login
+    working_dir: /data
+    volumes:
+      - etc_munge:/etc/munge:z
+      - etc_slurm:/etc/slurm:z
+      - slurm_jobdir:/data:z
+      - var_log_slurm:/var/log/slurm:z
+      - scratch_c1:/scratch/c1
+      - scratch_c2:/scratch/c2
+      - home:/home
+      - type: bind
+        source: ./srv/slurm_proxy_shell
+        target: /srv/slurm_proxy_shell
+    ports:
+      - "10022:22"
+    expose:
+      - "22"
+    depends_on:
+      slurmctld:
         condition: service_healthy
     networks:
       - slurm-network
@@ -114,6 +151,8 @@ services:
       - etc_slurm:/etc/slurm
       - slurm_jobdir:/data
       - var_log_slurm:/var/log/slurm
+      - scratch_c1:/scratch
+      - home:/home
     expose:
       - "6818"
     depends_on:
@@ -140,6 +179,8 @@ services:
       - etc_slurm:/etc/slurm
       - slurm_jobdir:/data
       - var_log_slurm:/var/log/slurm
+      - scratch_c2:/scratch
+      - home:/home
     expose:
       - "6818"
     depends_on:
@@ -160,6 +201,9 @@ volumes:
   slurm_jobdir:
   var_lib_mysql:
   var_log_slurm:
+  scratch_c1:
+  scratch_c2:
+  home:
 
 networks:
   slurm-network:

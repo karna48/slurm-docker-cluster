@@ -4,6 +4,11 @@ set -e
 echo "---> Starting the MUNGE Authentication service (munged) ..."
 gosu munge /usr/sbin/munged
 
+if [ "$1" = "slurmlogin" ]
+then
+    echo "(...nothing to do for login...)"
+fi
+
 if [ "$1" = "slurmdbd" ]
 then
     echo "---> Starting the Slurm Database Daemon (slurmdbd) ..."
