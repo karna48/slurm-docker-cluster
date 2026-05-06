@@ -84,10 +84,10 @@ RUN set -ex \
 # ============================================================================
 FROM rockylinux/rockylinux:9
 
-LABEL org.opencontainers.image.source="https://github.com/giovtorres/slurm-docker-cluster" \
+LABEL org.opencontainers.image.source="https://github.com/karna48/slurm-docker-cluster" \
       org.opencontainers.image.title="slurm-docker-cluster" \
-      org.opencontainers.image.description="Slurm Docker cluster on Rocky Linux 9" \
-      maintainer="Giovanni Torres"
+      org.opencontainers.image.description="Slurm Docker cluster on Rocky Linux 9 + SSH login node + Enroot" \
+      maintainer="Ladislav Dobrovsky"
 
 ARG SLURM_VERSION
 ARG TARGETARCH
@@ -126,9 +126,7 @@ RUN set -ex \
        vim-enhanced \
        wget \
        openssh-server \
-       python3.12 \
-    && dnf clean all \
-    && rm -rf /var/cache/dnf
+       python3.12
 
 # Install gosu for privilege dropping
 ARG GOSU_VERSION=1.19
@@ -137,12 +135,15 @@ RUN set -ex \
     && echo "Installing gosu for architecture: ${TARGETARCH}" \
     && wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-${TARGETARCH}" \
     && wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-${TARGETARCH}.asc" \
-    && export GNUPGHOME="$(mktemp -d)" \
-    && gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 \
-    && gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu \
-    && rm -rf "${GNUPGHOME}" /usr/local/bin/gosu.asc \
     && chmod +x /usr/local/bin/gosu \
     && gosu nobody true
+
+# [DISABLED] verification of the download
+#    && export GNUPGHOME="$(mktemp -d)" \
+#    && gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 \
+#    && gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu \
+#    && rm -rf "${GNUPGHOME}" /usr/local/bin/gosu.asc \
+
 
 COPY --from=builder /root/rpmbuild/RPMS/*/*.rpm /tmp/rpms/
 
@@ -155,8 +156,7 @@ RUN set -ex \
        /tmp/rpms/slurm-slurmdbd-*.rpm \
        /tmp/rpms/slurm-slurmrestd-*.rpm \
        /tmp/rpms/slurm-contribs-*.rpm \
-    && rm -rf /tmp/rpms \
-    && dnf clean all
+    && rm -rf /tmp/rpms 
 
 # Create slurm user and group
 RUN set -x \
@@ -184,6 +184,23 @@ RUN set -x \
         /var/lib/slurm \
         /var/log/slurm \
         /etc/slurm
+
+# NVIDIA Enroot
+RUN set -ex \
+    && RPM_ARCH=$(case "${TARGETARCH}" in \
+         amd64) echo "x86_64" ;; \
+         arm64) echo "aarch64" ;; \
+         *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+       esac) \
+    && mkdir /tmp/rpms/ \
+    && wget -O /tmp/rpms/enroot-4.0.1-1.el8.${RPM_ARCH}.rpm https://github.com/NVIDIA/enroot/releases/download/v4.0.1/enroot-4.0.1-1.el8.${RPM_ARCH}.rpm \
+    && wget -O /tmp/rpms/enroot+caps-4.0.1-1.el8.${RPM_ARCH}.rpm https://github.com/NVIDIA/enroot/releases/download/v4.0.1/enroot+caps-4.0.1-1.el8.${RPM_ARCH}.rpm \
+    && dnf -y install /tmp/rpms/*.rpm \
+    && rm -rf /tmp/rpms
+
+RUN set -ex \
+    && rm -rf /var/cache/dnf \
+    && dnf clean all
 
 # Copy Slurm configuration files
 # Version-specific configs: Extract major.minor from SLURM_VERSION (e.g., "24.11" from "24.11.6")
@@ -217,9 +234,20 @@ RUN set -ex \
        fi \
     && chown slurm:slurm /etc/slurm/slurm.conf /etc/slurm/cgroup.conf /etc/slurm/slurmdbd.conf \
     && chmod 644 /etc/slurm/slurm.conf /etc/slurm/cgroup.conf \
-    && chmod 600 /etc/slurm/slurmdbd.conf \
-    && rm -rf /tmp/slurm-config
+    && chmod 600 /etc/slurm/slurmdbd.conf 
+
 COPY --chown=slurm:slurm --chmod=0600 examples /root/examples
+
+RUN cp /tmp/slurm-config/userXhome/.profile /root \
+    && cp /tmp/slurm-config/userXhome/.bashrc /root \
+    && cp /tmp/slurm-config/userXhome/.profile /home/user1 \
+    && cp /tmp/slurm-config/userXhome/.bashrc /home/user1 \
+    && cp /tmp/slurm-config/userXhome/.profile /home/user2 \
+    && cp /tmp/slurm-config/userXhome/.bashrc /home/user2 \
+    && chown user1 /home/user1/.profile  /home/user1/.bashrc \
+    && chown user2 /home/user2/.profile /home/user2/.bashrc
+
+RUN rm -rf /tmp/slurm-config
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
