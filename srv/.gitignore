@@ -3,3 +3,6 @@
 slurm_proxy_shell
 slurm_proxy_shell/*
 images
+
+copy_slurm_proxy_shell.sh
+

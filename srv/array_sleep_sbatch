@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# spawn array job of random sleeps, failing randomly
+
+#SBATCH -n 1 
+#SBATCH -N 1
+#SBATCH --array=0-128
+
+sleep $(( $RANDOM % 3 + 2 ))
+
+exit $(( $RANDOM % 2 ))

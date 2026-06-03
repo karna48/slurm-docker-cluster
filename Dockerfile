@@ -126,7 +126,7 @@ RUN set -ex \
        vim-enhanced \
        wget \
        openssh-server \
-       python3.12
+       python3.12 python3.14 python3.14-pip
 
 # Install gosu for privilege dropping
 ARG GOSU_VERSION=1.19
@@ -246,6 +246,8 @@ RUN cp /tmp/slurm-config/userXhome/.profile /root \
     && cp /tmp/slurm-config/userXhome/.bashrc /home/user2 \
     && chown user1 /home/user1/.profile  /home/user1/.bashrc \
     && chown user2 /home/user2/.profile /home/user2/.bashrc
+
+# [TODO] create /scratch/$NODE/$USER , chown
 
 RUN rm -rf /tmp/slurm-config
 

@@ -83,10 +83,10 @@ shell-login:  ## Open shell in slurmlogin
 	docker exec -it slurmlogin bash
 
 ssh-user1:
-	ssh user1@127.0.0.1 -p 10022
+	ssh -p 10022 user1@127.0.0.1 
 
 ssh-user2:
-	ssh user2@127.0.0.1 -p 10022
+	ssh -p 10022 user2@127.0.0.1 
 
 logs-slurmctld:  ## Show slurmctld logs
 	docker compose logs -f slurmctld

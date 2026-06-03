@@ -140,4 +140,3 @@ Match User user2
     #ChrootDirectory /jail  # not necesary
 	X11Forwarding no
 	AllowTcpForwarding no
- https://github.com/NVIDIA/enroot/releases/download/v4.0.1/enroot-4.0.1-1.el8.${arch}.rpm
