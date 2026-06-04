@@ -111,35 +111,36 @@ services:
       retries: 3
       start_period: 20s
 
-  slurmrestd:
-    image: slurm-docker-cluster:${SLURM_VERSION:-25.05.3}
-    command: ["slurmrestd"]
-    container_name: slurmrestd
-    hostname: slurmrestd
-    privileged: true
-    volumes:
-      - etc_munge:/etc/munge
-      - etc_slurm:/etc/slurm
-      - var_log_slurm:/var/log/slurm
-    ports:
-      - "6820:6820"
-    expose:
-      - "6820"
-    depends_on:
-      slurmctld:
-        condition: service_healthy
-    networks:
-      - slurm-network
-    healthcheck:
-      test: ["CMD-SHELL", "test -S /var/run/slurmrestd/slurmrestd.socket"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
+  # slurmrestd:
+  #   image: slurm-docker-cluster:${SLURM_VERSION:-25.05.3}
+  #   command: ["slurmrestd"]
+  #   container_name: slurmrestd
+  #   hostname: slurmrestd
+  #   privileged: true
+  #   volumes:
+  #     - etc_munge:/etc/munge
+  #     - etc_slurm:/etc/slurm
+  #     - var_log_slurm:/var/log/slurm
+  #   ports:
+  #     - "6820:6820"
+  #   expose:
+  #     - "6820"
+  #   depends_on:
+  #     slurmctld:
+  #       condition: service_healthy
+  #   networks:
+  #     - slurm-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "test -S /var/run/slurmrestd/slurmrestd.socket"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 20s
 
   c1:
     image: slurm-docker-cluster:${SLURM_VERSION:-25.05.3}
-    command: ["slurmd"]
+    command: ["/bin/bash", "-c", "/root/init_scratch.sh && exec slurmd -D"]
+    #command: ["slurmd"]
     container_name: c1
     hostname: c1
     working_dir: /data
@@ -167,7 +168,7 @@ services:
 
   c2:
     image: slurm-docker-cluster:${SLURM_VERSION:-25.05.3}
-    command: ["slurmd"]
+    command: ["/bin/bash", "-c", "/root/init_scratch.sh && exec slurmd -D"]
     container_name: c2
     hostname: c2
     working_dir: /data

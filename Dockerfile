@@ -247,8 +247,8 @@ RUN cp /tmp/slurm-config/userXhome/.profile /root \
     && chown user1 /home/user1/.profile  /home/user1/.bashrc \
     && chown user2 /home/user2/.profile /home/user2/.bashrc
 
-# [TODO] create /scratch/$NODE/$USER , chown
-
+RUN cp /tmp/slurm-config/mkdir2.sh /root \
+    && cp /tmp/slurm-config/init_scratch.sh /root
 RUN rm -rf /tmp/slurm-config
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
